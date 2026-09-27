@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ASL Learning & Practice Hub</title>
+
+    <!-- MediaPipe Libraries for Camera Tracking -->
+    <script
+      src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"
+      crossorigin="anonymous"
+    ></script>
+
+    <style>
+      :root {
+        --bg-dark: #06140e;
+        --card-bg: #0d281c;
+        --card-border: #184e36;
+        --accent-green: #10b981;
+        --accent-emerald: #34d399;
+        --accent-lime: #84cc16;
+        --accent-mint: #6ee7b7;
+        --accent-red: #ef4444;
+        --text-main: #ecfdf5;
+        --text-muted: #86efac;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family:
+          "Segoe UI",
+          system-ui,
+          -apple-system,
+          sans-serif;
+      }
+      body {
+        background-color: var(--bg-dark);
+        color: var(--text-main);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      header {
+        background: #04120b;
+        padding: 16px 32px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 2px solid var(--card-border);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .brand-logo {
+        font-size: 28px;
+      }
+      .brand-title {
+        font-size: 20px;
+        font-weight: 800;
+        background: linear-gradient(135deg, #34d399, #a3e635);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      .user-stats {
+        display: flex;
+        gap: 16px;
+        align-items: center;
+      }
+      .stat-pill {
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-weight: 700;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .container {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 32px 24px;
+        width: 100%;
+        flex: 1;
+      }
+
+      .nav-tabs {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 28px;
+        border-bottom: 1px solid var(--card-border);
+        padding-bottom: 12px;
+      }
+      .tab-btn {
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        padding: 10px 20px;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 15px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .tab-btn:hover {
+        color: var(--text-main);
+        background: rgba(52, 211, 153, 0.1);
+      }
+      .tab-btn.active {
+        color: #04120b;
+        background: var(--accent-emerald);
+      }
+
+      .tab-panel {
+        display: none;
+      }
+      .tab-panel.active {
+        display: block;
+      }
+
+      .card {
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 24px;
+      }
+      .card-title {
+        font-size: 18px;
+        font-weight: 800;
+        margin-bottom: 8px;
+        color: var(--accent-emerald);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .card-desc {
+        color: var(--text-muted);
+        font-size: 14px;
+        margin-bottom: 20px;
+      }
+
+      /* Search Bar Styling */
+      .search-box {
+        width: 100%;
+        padding: 14px 20px;
+        margin-bottom: 24px;
+        background: #04120b;
+        border: 2px solid var(--card-border);
+        border-radius: 12px;
+        color: #fff;
+        font-size: 16px;
+        outline: none;
+        transition: border-color 0.2s;
+      }
+      .search-box:focus {
+        border-color: var(--accent-emerald);
+      }
+
+      .asl-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+        gap: 16px;
+      }
+      .asl-card {
+        background: #04120b;
+        border: 2px solid var(--card-border);
+        border-radius: 14px;
+        padding: 16px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .asl-card:hover {
+        border-color: var(--accent-emerald);
+        transform: translateY(-3px);
+      }
+
+      .asl-symbol {
+        font-size: 42px;
+        font-weight: 900;
+        color: var(--accent-emerald);
+        margin-bottom: 4px;
+      }
+      .asl-label {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text-main);
+      }
+
+      /* Modal / Close-Up Pop-up View */
+      .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(4, 18, 11, 0.88);
+        backdrop-filter: blur(8px);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+      }
+      .modal-overlay.active {
+        display: flex;
+      }
+      .modal-card {
+        background: var(--card-bg);
+        border: 2px solid var(--accent-emerald);
+        border-radius: 20px;
+        padding: 36px;
+        width: 90%;
+        max-width: 450px;
+        text-align: center;
+        position: relative;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7);
+      }
+      .modal-close {
+        position: absolute;
+        top: 16px;
+        right: 20px;
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        font-size: 28px;
+        cursor: pointer;
+      }
+      .modal-symbol {
+        font-size: 110px;
+        font-weight: 900;
+        color: var(--accent-emerald);
+        margin-bottom: 8px;
+      }
+
+      .btn {
+        background: var(--accent-emerald);
+        color: #04120b;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 10px;
+        font-weight: 800;
+        font-size: 15px;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .btn:hover {
+        opacity: 0.9;
+        transform: translateY(-1px);
+      }
+      .btn-green {
+        background: var(--accent-lime);
+        color: #04120b;
+      }
+      .btn-mint {
+        background: var(--accent-mint);
+        color: #04120b;
+      }
+
+      .flashcard-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-top: 10px;
+      }
+      .flashcard {
+        width: 300px;
+        height: 320px;
+        background: #04120b;
+        border: 3px solid var(--accent-emerald);
+        border-radius: 20px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        transition: transform 0.3s;
+        margin-bottom: 20px;
+      }
+      .flashcard-symbol {
+        font-size: 90px;
+        font-weight: 900;
+        color: var(--accent-emerald);
+      }
+      .flashcard-answer {
+        font-size: 32px;
+        font-weight: 800;
+        color: var(--accent-mint);
+        display: none;
+      }
+
+      .quiz-box {
+        text-align: center;
+        max-width: 600px;
+        margin: 0 auto;
+      }
+      .quiz-options {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-top: 24px;
+      }
+      .quiz-btn {
+        background: #04120b;
+        border: 2px solid var(--card-border);
+        color: var(--text-main);
+        padding: 18px;
+        border-radius: 12px;
+        font-size: 18px;
+        font-weight: 800;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .quiz-btn:hover {
+        border-color: var(--accent-emerald);
+        background: rgba(52, 211, 153, 0.15);
+      }
+      .feedback-msg {
+        margin-top: 16px;
+        font-size: 18px;
+        font-weight: 800;
+        height: 28px;
+      }
+
+      .camera-layout {
+        display: flex;
+        gap: 24px;
+        flex-wrap: wrap;
+      }
+      .camera-view {
+        position: relative;
+        width: 480px;
+        height: 360px;
+        background: #000;
+        border-radius: 16px;
+        overflow: hidden;
+        border: 2px solid var(--card-border);
+      }
+      #webcam,
+      #outputCanvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        transform: scaleX(-1);
+      }
+
+      .arena-banner {
+        background: linear-gradient(135deg, #0b3824, #14532d);
+        border: 2px solid var(--accent-emerald);
+        border-radius: 16px;
+        padding: 28px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      /* MULTIPLAYER ARENA STYLES */
+      .arena-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin: 20px 0;
+      }
+      .arena-tile {
+        background: #04120b;
+        border: 2px solid var(--card-border);
+        border-radius: 12px;
+        height: 90px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 30px;
+        position: relative;
+      }
+      .arena-tile:hover {
+        border-color: var(--accent-emerald);
+      }
+      .arena-tile .player-tag {
+        position: absolute;
+        bottom: 4px;
+        font-size: 10px;
+        font-weight: bold;
+        background: rgba(0, 0, 0, 0.8);
+        padding: 2px 6px;
+        border-radius: 6px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="brand">
+        <div class="brand-logo">🖐️</div>
+        <div class="brand-title">ASL LEARNING & PRACTICE HUB</div>
+      </div>
+      <div class="user-stats">
+        <div class="stat-pill">
+          🔥 Streak: <span id="streakCount" style="color: #a3e635">0</span> Days
+        </div>
+        <div class="stat-pill">
+          ⭐ Play Points:
+          <span id="xpCount" style="color: var(--accent-emerald)">100</span> XP
+        </div>
+      </div>
+    </header>
+
+    <div class="container">
+      <div class="nav-tabs">
+        <button class="tab-btn active" onclick="switchTab('dictionary', event)">
+          📖 Sign Dictionary
+        </button>
+        <button class="tab-btn" onclick="switchTab('flashcards', event)">
+          🎴 Flashcard Practice
+        </button>
+        <button class="tab-btn" onclick="switchTab('quiz', event)">
+          🧠 Interactive Quiz (+XP)
+        </button>
+        <button class="tab-btn" onclick="switchTab('camera', event)">
+          📷 Live Webcam Practice
+        </button>
+      </div>
+
+      <!-- TAB 1: ASL DICTIONARY WITH SEARCH & CLOSE-UP MODAL -->
+      <div id="dictionary" class="tab-panel active">
+        <div class="card">
+          <div class="card-title">Sign Dictionary & Search</div>
+          <div class="card-desc">
+            Type any letter or sign name to search, or click any card for a full
+            close-up view.
+          </div>
+
+          <input
+            type="text"
+            id="searchInput"
+            class="search-box"
+            placeholder="🔍 Search signs (e.g. A, B, Hello, Love, Thank You)..."
+            onkeyup="filterDictionary()"
+          />
+
+          <div class="asl-grid" id="alphabetGrid"></div>
+        </div>
+      </div>
+
+      <!-- TAB 2: FLASHCARDS -->
+      <div id="flashcards" class="tab-panel">
+        <div class="card">
+          <div class="card-title">Flashcard Deck</div>
+          <div class="card-desc">
+            Click the card to reveal the correct sign letter, then hit 'Next' to
+            continue practicing.
+          </div>
+
+          <div class="flashcard-container">
+            <div class="flashcard" id="flashcardBox" onclick="flipFlashcard()">
+              <div class="flashcard-symbol" id="cardSymbol">✊</div>
+              <div class="flashcard-answer" id="cardAnswer">Letter "A"</div>
+            </div>
+            <button class="btn" onclick="nextFlashcard()">Next Card ➔</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: QUIZ -->
+      <div id="quiz" class="tab-panel">
+        <div class="card">
+          <div class="card-title">Knowledge Quiz</div>
+          <div class="card-desc">
+            Test your recognition speed! Each correct answer earns +10 XP
+            towards entering the Arena.
+          </div>
+
+          <div class="quiz-box">
+            <div
+              class="asl-card"
+              style="
+                width: 140px;
+                height: 140px;
+                margin: 0 auto;
+                justify-content: center;
+              "
+            >
+              <div
+                class="asl-symbol"
+                id="quizTargetSymbol"
+                style="font-size: 64px"
+              >
+                ✊
+              </div>
+            </div>
+            <h3 style="margin-top: 16px">Which sign is shown above?</h3>
+
+            <div class="quiz-options" id="quizOptionsGrid"></div>
+            <div class="feedback-msg" id="quizFeedback"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 4: CAMERA -->
+      <div id="camera" class="tab-panel">
+        <div class="card">
+          <div class="card-title">Real-time Hand Tracking</div>
+          <div class="card-desc">
+            Enable your camera to track hand landmarks in real-time using
+            MediaPipe framework.
+          </div>
+
+          <button
+            class="btn btn-mint"
+            onclick="startCamera()"
+            style="margin-bottom: 20px"
+          >
+            Start Camera Tracking
+          </button>
+
+          <div class="camera-layout">
+            <div class="camera-view" id="camContainer" style="display: none">
+              <video id="webcam" autoplay playsinline></video>
+              <canvas id="outputCanvas" width="480" height="360"></canvas>
+            </div>
+            <div style="flex: 1; min-width: 250px">
+              <h3>Instructions:</h3>
+              <ul
+                style="
+                  color: var(--text-muted);
+                  margin-left: 20px;
+                  margin-top: 10px;
+                  line-height: 1.8;
+                "
+              >
+                <li>Position your hand clearly inside the camera frame.</li>
+                <li>Ensure good lighting in your room.</li>
+                <li>Green landmark nodes will map your finger joints live!</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ARENA BANNER -->
+      <div class="arena-banner">
+        <div>
+          <h2 style="font-size: 22px; font-weight: 800; color: #fff">
+            Ready for the Multiplayer Arena?
+          </h2>
+          <p style="color: #a7f3d0; font-size: 14px; margin-top: 4px">
+            Entry Fee: 20 XP | Play live against interactive opponents on sign
+            tiles!
+          </p>
+        </div>
+        <button class="btn btn-mint" onclick="launchArena()">
+          🎮 Enter Sign Arena (-20 XP)
+        </button>
+      </div>
+    </div>
+
+    <!-- CLOSE-UP MODAL OVERLAY -->
+    <div class="modal-overlay" id="detailModal">
+      <div class="modal-card">
+        <button class="modal-close" onclick="closeModal()">✕</button>
+        <div class="modal-symbol" id="modalSymbol">✊</div>
+        <h2
+          id="modalTitle"
+          style="
+            font-size: 24px;
+            margin-bottom: 8px;
+            color: var(--accent-emerald);
+          "
+        >
+          Letter A
+        </h2>
+        <p
+          id="modalDesc"
+          style="color: var(--text-muted); line-height: 1.6; font-size: 15px"
+        >
+          Make a fist with your dominant hand, with your thumb resting straight
+          up against the side of your index finger.
+        </p>
+        <button
+          class="btn btn-mint"
+          style="margin-top: 24px; width: 100%; justify-content: center"
+          onclick="closeModal()"
+        >
+          Got it!
+        </button>
+      </div>
+    </div>
+
+    <!-- MULTIPLAYER ARENA MODAL -->
+    <div class="modal-overlay" id="arenaModal">
+      <div
+        class="modal-card"
+        style="max-width: 650px; border-color: var(--accent-emerald)"
+      >
+        <button class="modal-close" onclick="closeArena()">✕</button>
+        <h2 style="color: var(--accent-emerald); font-size: 26px">
+          ⚔️ Sign Arena Floor
+        </h2>
+        <p style="color: var(--text-muted); margin-top: 4px" id="arenaStatus">
+          Connected! Practice stepping on tiles & claiming sign points.
+        </p>
+
+        <div class="arena-grid" id="arenaGrid"></div>
+
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 16px;
+          "
+        >
+          <span
+            style="font-weight: bold; color: var(--accent-mint)"
+            id="playerScore"
+            >Your Score: 0 pts</span
+          >
+          <button class="btn btn-mint" onclick="movePlayer()">
+            Step to Random Tile 🎲
+          </button>
+          <button
+            class="btn"
+            style="background: var(--card-border); color: #fff"
+            onclick="closeArena()"
+          >
+            Leave Arena
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      /* DICTIONARY WITH HAND EMOJI GESTURES */
+      const DICTIONARY_DATA = [
+        {
+          name: "A",
+          emoji: "✊",
+          category: "Alphabet",
+          desc: "Make a fist with your thumb resting against the side of your index finger.",
+        },
+        {
+          name: "B",
+          emoji: "✋",
+          category: "Alphabet",
+          desc: "Hold your hand open with all four fingers straight up and thumb folded across palm.",
+        },
+        {
+          name: "C",
+          emoji: "🤏",
+          category: "Alphabet",
+          desc: "Curved hand forming the letter C shape with fingers and thumb.",
+        },
+        {
+          name: "D",
+          emoji: "☝️",
+          category: "Alphabet",
+          desc: "Index finger straight up, other fingers touch thumb forming a loop.",
+        },
+        {
+          name: "E",
+          emoji: "✊",
+          category: "Alphabet",
+          desc: "Fingers curled down touching thumb resting under palm.",
+        },
+        {
+          name: "F",
+          emoji: "👌",
+          category: "Alphabet",
+          desc: "Index finger touches thumb in an 'OK' sign, remaining 3 fingers spread up.",
+        },
+        {
+          name: "G",
+          emoji: "👈",
+          category: "Alphabet",
+          desc: "Index finger and thumb pointing sideways parallel to each other.",
+        },
+        {
+          name: "H",
+          emoji: "👉",
+          category: "Alphabet",
+          desc: "Index and middle finger extended horizontally side-by-side.",
+        },
+        {
+          name: "I",
+          emoji: "🖐️",
+          category: "Alphabet",
+          desc: "Fist closed with only pinky finger pointing straight up.",
+        },
+        {
+          name: "J",
+          emoji: "🤙",
+          category: "Alphabet",
+          desc: "Pinky extended, drawing a J shape curve in the air.",
+        },
+        {
+          name: "K",
+          emoji: "✌️",
+          category: "Alphabet",
+          desc: "Index pointing up, middle finger angled forward, thumb tucked between them.",
+        },
+        {
+          name: "L",
+          emoji: "👆",
+          category: "Alphabet",
+          desc: "Thumb and index finger open forming an L shape.",
+        },
+        {
+          name: "M",
+          emoji: "👊",
+          category: "Alphabet",
+          desc: "Thumb tucked under first three fingers (index, middle, ring).",
+        },
+        {
+          name: "N",
+          emoji: "👊",
+          category: "Alphabet",
+          desc: "Thumb tucked under first two fingers (index, middle).",
+        },
+        {
+          name: "O",
+          emoji: "👌",
+          category: "Alphabet",
+          desc: "All fingertips touching thumb tip to form an O shape.",
+        },
+        {
+          name: "P",
+          emoji: "👇",
+          category: "Alphabet",
+          desc: "K sign pointed downward towards the ground.",
+        },
+        {
+          name: "Q",
+          emoji: "👇",
+          category: "Alphabet",
+          desc: "G sign pointed downward towards the ground.",
+        },
+        {
+          name: "R",
+          emoji: "🤞",
+          category: "Alphabet",
+          desc: "Index and middle fingers crossed tightly.",
+        },
+        {
+          name: "S",
+          emoji: "✊",
+          category: "Alphabet",
+          desc: "Fist with thumb crossed over front of fingers.",
+        },
+        {
+          name: "T",
+          emoji: "👊",
+          category: "Alphabet",
+          desc: "Thumb tucked under index finger only.",
+        },
+        {
+          name: "U",
+          emoji: "✌️",
+          category: "Alphabet",
+          desc: "Index and middle fingers straight up together.",
+        },
+        {
+          name: "V",
+          emoji: "✌️",
+          category: "Alphabet",
+          desc: "Index and middle fingers extended up spread in a V shape.",
+        },
+        {
+          name: "W",
+          emoji: "🤟",
+          category: "Alphabet",
+          desc: "Three middle fingers extended up in a W shape.",
+        },
+        {
+          name: "X",
+          emoji: "☝️",
+          category: "Alphabet",
+          desc: "Index finger hooked like a claw.",
+        },
+        {
+          name: "Y",
+          emoji: "🤙",
+          category: "Alphabet",
+          desc: "Thumb and pinky extended out (hang loose sign).",
+        },
+        {
+          name: "Z",
+          emoji: "👉",
+          category: "Alphabet",
+          desc: "Index finger drawing a Z in the air.",
+        },
+        {
+          name: "Hello",
+          emoji: "👋",
+          category: "Phrases",
+          desc: "Open hand starting at forehead moving outward in a wave.",
+        },
+        {
+          name: "Love",
+          emoji: "🤟",
+          category: "Phrases",
+          desc: "Thumb, index, and pinky extended (I Love You sign).",
+        },
+        {
+          name: "Thank You",
+          emoji: "🙏",
+          category: "Phrases",
+          desc: "Fingertips touching chin then moving forward toward the person.",
+        },
+      ];
+
+      let currentXp = parseInt(localStorage.getItem("user_xp") || "100");
+      let currentStreak = parseInt(localStorage.getItem("user_streak") || "1");
+      let arenaScore = 0;
+      let currentPlayerTile = 0;
+
+      function updateStats() {
+        document.getElementById("xpCount").innerText = currentXp;
+        document.getElementById("streakCount").innerText = currentStreak;
+        localStorage.setItem("user_xp", currentXp.toString());
+        localStorage.setItem("user_streak", currentStreak.toString());
+      }
+
+      function switchTab(tabId, evt) {
+        document
+          .querySelectorAll(".tab-panel")
+          .forEach((panel) => panel.classList.remove("active"));
+        document
+          .querySelectorAll(".tab-btn")
+          .forEach((btn) => btn.classList.remove("active"));
+
+        document.getElementById(tabId).classList.add("active");
+        if (evt && evt.target) evt.target.classList.add("active");
+
+        if (tabId === "quiz") setupQuiz();
+      }
+
+      /* Build Dictionary with Search Filter */
+      function buildDictionary(items) {
+        const grid = document.getElementById("alphabetGrid");
+        grid.innerHTML = "";
+        items.forEach((item) => {
+          const card = document.createElement("div");
+          card.className = "asl-card";
+          card.innerHTML = `<div class="asl-symbol">${item.emoji}</div><div class="asl-label">${item.name}</div>`;
+          card.onclick = () => openModal(item);
+          grid.appendChild(card);
+        });
+      }
+
+      function filterDictionary() {
+        const query = document
+          .getElementById("searchInput")
+          .value.toLowerCase();
+        const filtered = DICTIONARY_DATA.filter(
+          (item) =>
+            item.name.toLowerCase().includes(query) ||
+            item.desc.toLowerCase().includes(query) ||
+            item.category.toLowerCase().includes(query),
+        );
+        buildDictionary(filtered);
+      }
+
+      /* Modal / Close-Up Controls */
+      function openModal(item) {
+        document.getElementById("modalSymbol").innerText = item.emoji;
+        document.getElementById("modalTitle").innerText = `Sign: ${item.name}`;
+        document.getElementById("modalDesc").innerText = item.desc;
+        document.getElementById("detailModal").classList.add("active");
+      }
+
+      function closeModal() {
+        document.getElementById("detailModal").classList.remove("active");
+      }
+
+      /* Flashcard Logic */
+      let currentFlashcardIndex = 0;
+      let isFlipped = false;
+
+      function nextFlashcard() {
+        isFlipped = false;
+        document.getElementById("cardAnswer").style.display = "none";
+        document.getElementById("cardSymbol").style.display = "block";
+        currentFlashcardIndex = Math.floor(
+          Math.random() * DICTIONARY_DATA.length,
+        );
+        const item = DICTIONARY_DATA[currentFlashcardIndex];
+        document.getElementById("cardSymbol").innerText = item.emoji;
+        document.getElementById("cardAnswer").innerText =
+          `Letter "${item.name}"`;
+      }
+
+      function flipFlashcard() {
+        isFlipped = !isFlipped;
+        if (isFlipped) {
+          document.getElementById("cardSymbol").style.display = "none";
+          document.getElementById("cardAnswer").style.display = "block";
+        } else {
+          document.getElementById("cardSymbol").style.display = "block";
+          document.getElementById("cardAnswer").style.display = "none";
+        }
+      }
+
+      /* Quiz Logic */
+      let quizTargetObj = null;
+
+      function setupQuiz() {
+        const randomIndex = Math.floor(Math.random() * 26);
+        quizTargetObj = DICTIONARY_DATA[randomIndex];
+        document.getElementById("quizTargetSymbol").innerText =
+          quizTargetObj.emoji;
+        document.getElementById("quizFeedback").innerText = "";
+
+        let options = [quizTargetObj.name];
+        while (options.length < 4) {
+          let randName = DICTIONARY_DATA[Math.floor(Math.random() * 26)].name;
+          if (!options.includes(randName)) options.push(randName);
+        }
+        options.sort(() => Math.random() - 0.5);
+
+        const grid = document.getElementById("quizOptionsGrid");
+        grid.innerHTML = "";
+        options.forEach((opt) => {
+          const btn = document.createElement("button");
+          btn.className = "quiz-btn";
+          btn.innerText = opt;
+          btn.onclick = () => checkQuizAnswer(opt);
+          grid.appendChild(btn);
+        });
+      }
+
+      function checkQuizAnswer(selected) {
+        const feedback = document.getElementById("quizFeedback");
+        if (selected === quizTargetObj.name) {
+          feedback.innerText = "✅ Correct! +10 XP Earned";
+          feedback.style.color = "var(--accent-mint)";
+          currentXp += 10;
+          updateStats();
+          setTimeout(setupQuiz, 1200);
+        } else {
+          feedback.innerText = "❌ Try Again!";
+          feedback.style.color = "var(--accent-red)";
+        }
+      }
+
+      function startCamera() {
+        const camContainer = document.getElementById("camContainer");
+        camContainer.style.display = "block";
+
+        const videoElement = document.getElementById("webcam");
+        const canvasElement = document.getElementById("outputCanvas");
+        const canvasCtx = canvasElement.getContext("2d");
+
+        const hands = new Hands({
+          locateFile: (file) =>
+            `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
+        });
+
+        hands.setOptions({
+          maxNumHands: 2,
+          modelComplexity: 1,
+          minDetectionConfidence: 0.5,
+          minTrackingConfidence: 0.5,
+        });
+
+        hands.onResults((results) => {
+          canvasCtx.save();
+          canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+          canvasCtx.drawImage(
+            results.image,
+            0,
+            0,
+            canvasElement.width,
+            canvasElement.height,
+          );
+
+          if (results.multiHandLandmarks) {
+            for (const landmarks of results.multiHandLandmarks) {
+              drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, {
+                color: "#34d399",
+                lineWidth: 3,
+              });
+              drawLandmarks(canvasCtx, landmarks, {
+                color: "#84cc16",
+                lineWidth: 1,
+                radius: 4,
+              });
+            }
+          }
+          canvasCtx.restore();
+        });
+
+        const camera = new Camera(videoElement, {
+          onFrame: async () => {
+            await hands.send({ image: videoElement });
+          },
+          width: 480,
+          height: 360,
+        });
+        camera.start();
+      }
+
+      /* MULTIPLAYER ARENA INTERACTIVE SYSTEM */
+      function launchArena() {
+        if (currentXp < 20) {
+          alert(
+            "You need at least 20 XP to enter the Arena! Complete quizzes above to earn more XP.",
+          );
+          return;
+        }
+        currentXp -= 20;
+        updateStats();
+
+        document.getElementById("arenaModal").classList.add("active");
+        renderArenaGrid();
+      }
+
+      function closeArena() {
+        document.getElementById("arenaModal").classList.remove("active");
+      }
+
+      function renderArenaGrid() {
+        const grid = document.getElementById("arenaGrid");
+        grid.innerHTML = "";
+        for (let i = 0; i < 12; i++) {
+          const tile = document.createElement("div");
+          tile.className = "arena-tile";
+          const signItem = DICTIONARY_DATA[i % DICTIONARY_DATA.length];
+
+          let tag = "";
+          if (i === currentPlayerTile) {
+            tag = `<span class="player-tag" style="color: var(--accent-mint);">YOU (P1)</span>`;
+            tile.style.borderColor = "var(--accent-mint)";
+          } else if (i === (currentPlayerTile + 4) % 12) {
+            tag = `<span class="player-tag" style="color: var(--accent-lime);">P2</span>`;
+          }
+
+          tile.innerHTML = `${signItem.emoji} ${tag}`;
+          tile.onclick = () => claimTile(i);
+          grid.appendChild(tile);
+        }
+      }
+
+      function movePlayer() {
+        currentPlayerTile = Math.floor(Math.random() * 12);
+        arenaScore += 5;
+        document.getElementById("playerScore").innerText =
+          `Your Score: ${arenaScore} pts`;
+        renderArenaGrid();
+      }
+
+      function claimTile(index) {
+        currentPlayerTile = index;
+        arenaScore += 10;
+        document.getElementById("playerScore").innerText =
+          `Your Score: ${arenaScore} pts`;
+        renderArenaGrid();
+      }
+
+      document.addEventListener("DOMContentLoaded", () => {
+        updateStats();
+        buildDictionary(DICTIONARY_DATA);
+        nextFlashcard();
+      });
+    </script>
+  </body>
+</html>
